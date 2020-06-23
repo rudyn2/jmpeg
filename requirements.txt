@@ -1,0 +1,9 @@
+opencv-python~=4.2.0.34
+numpy~=1.18.1
+matplotlib~=3.2.1
+scipy~=1.4.1
+h5py~=2.10.0
+click~=7.1.2
+tqdm~=4.46.1
+joblib~=0.15.1
+Pillow
