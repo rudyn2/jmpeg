@@ -1,9 +1,12 @@
 # jmpeg
 JPEG and MPEG Compression using Python
 
-Requires python>=3.0 and ffmpeg
+Requiere python>=3.0 y ffmpeg
 
-Usage:
+Uso:
 
-1) pip install -r requirements.txt
-2) python mpeg.py --ndrop 32 --ipath input_video.npy --opath output_video.avi
+1) Para instalar las dependencias necesarias en su entorno de python: pip install -r requirements.txt
+2) Para comprimir una secuencia de cuadros almacenada en un archivo 
+npy o mat ejecute: python mpeg.py --ndrop 32 --ipath input_video.npy --opath output_video.avi
+3) Para comprimir y ver la reconstrucion de un archivo .bmp
+ejecute: python jpeg.py --ndrop 32 --ipath input_image.bmp --opath output_image.b

@@ -18,6 +18,9 @@ class MPEG(object):
         return result
 
     def forward(self, fn):
+        """
+        Construye cada GOP y retorna el resultante del video en patrón IBx7.
+        """
 
         result = []
         frame_idx = 0
@@ -26,6 +29,7 @@ class MPEG(object):
             actual_gop_i_frame = self.vid[frame_idx, :, :, :]
             next_gop_i_frame = self.vid[frame_idx + 8, :, :, :]
 
+            # applies rules
             b_4 = fn(actual_gop_i_frame, next_gop_i_frame, self.vid[frame_idx + 4, :, :, :])
             b_2 = fn(actual_gop_i_frame,  b_4, self.vid[frame_idx + 2, :, :, :])
             b_1 = fn(actual_gop_i_frame, b_2, self.vid[frame_idx + 1, :, :, :])
@@ -70,14 +74,18 @@ class MPEG(object):
 
         org_vid = []
         frame_idx = 0
-        while frame_idx + 8 < len(compressed_video):
+        while frame_idx + 8 <= len(compressed_video):
             actual_gop_i_frame = compressed_video[frame_idx]
-            next_gop_i_frame = compressed_video[frame_idx + 8]
-            b_1, b_2, b_3, b_4, b_5, b_6, b_7 = compressed_video[frame_idx:frame_idx+7]
+            try:
+                next_gop_i_frame = compressed_video[frame_idx + 8]
+            except IndexError:
+                break
+            b_1, b_2, b_3, b_4, b_5, b_6, b_7 = compressed_video[frame_idx+1:frame_idx+8]
 
+            # invert applied rules
             c_4 = fn(actual_gop_i_frame, next_gop_i_frame, b_4)
             c_2 = fn(actual_gop_i_frame, b_4,  b_2)
-            c_1 = fn(actual_gop_i_frame, b_4, b_1)
+            c_1 = fn(actual_gop_i_frame, b_2, b_1)
             c_3 = fn(b_2, b_4, b_3)
             c_6 = fn(b_4, next_gop_i_frame, b_6)
             c_5 = fn(b_4, b_6, b_5)
@@ -91,7 +99,7 @@ class MPEG(object):
             org_vid.extend(compressed_video[frame_idx:])
 
         org_vid = np.stack(org_vid)
-        return org_vid.transpose((0, 3, 2, 1))
+        return np.clip(org_vid.transpose((0, 3, 2, 1)), 0, 255).astype('uint8')
 
     @classmethod
     def decompress(cls, compressed_video):
@@ -131,10 +139,11 @@ class MPEG(object):
         for frame_idx in tqdm(range(vid.shape[0]), "Writing video"):
             frame = vid[frame_idx, :, :, :]
             frame = frame.transpose(2, 1, 0)
-            out.write(cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+            out.write(frame)
         # Release everything if job is finished
         out.release()
         cv2.destroyAllWindows()
+        print("Ready!")
 
 
 @click.command()
@@ -157,8 +166,7 @@ def execute(ndrop, ipath, opath):
     else:
         raise ValueError("Solo arrays de videos en formato .mat o .npy.")
 
-    half = 120
-    v = MPEG(video[:half, :, :, :])
+    v = MPEG(video[:22, :, :, :])
     compressed_v = v.compress(ndrop)
     decompressed_v = v.decompress(compressed_v)
     MPEG.visualize(str(opath), decompressed_v)
@@ -166,12 +174,3 @@ def execute(ndrop, ipath, opath):
 
 if __name__ == '__main__':
     execute()
-    # video = np.load('full_video.npy')
-    # ndrop = 32
-    # opath = 'full.avi'
-    #
-    # short_video = video[:120, :, :, :]
-    # v = MPEG(short_video)
-    # compressed_v = v.compress(ndrop)
-    # decompressed_v = v.decompress(compressed_v)
-    # MPEG.visualize(str(opath), short_video)
